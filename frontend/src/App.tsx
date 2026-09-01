@@ -1,122 +1,122 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+// frontend/src/App.tsx
+import { useState, useEffect } from 'react';
+import axios from 'axios';
+import SupplyChainGraph from './components/SupplyChainGraph';
+import NodeDetails from './components/NodeDetails';
+import NewsAnalyzer from './components/NewsAnalyzer';
 
-function App() {
-  const [count, setCount] = useState(0)
-
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+interface GraphData {
+  nodes: { id: string; labels: string[]; properties: any }[];
+  links: { source: string; target: string; type: string }[];
 }
 
-export default App
+function App() {
+  const [graphData, setGraphData] = useState<GraphData | null>(null);
+  const [selectedNode, setSelectedNode] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchGraph();
+  }, []);
+
+  const fetchGraph = async () => {
+    try {
+      const response = await axios.get('http://127.0.0.1:8000/graph');
+      setGraphData(response.data);
+    } catch (error) {
+      console.error("Error fetching graph:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const refreshGraph = () => {
+    setLoading(true);
+    axios.get('http://127.0.0.1:8000/graph')
+      .then(res => setGraphData(res.data))
+      .finally(() => setLoading(false));
+  };
+
+  const handleNodeClick = async (nodeId: string) => {
+    try {
+      const response = await axios.get(`http://127.0.0.1:8000/nodes/${nodeId}`);
+      setSelectedNode(response.data);
+    } catch (error) {
+      console.error("Error fetching node details:", error);
+    }
+  };
+
+  return (
+    <div style={{ 
+      width: '100vw', 
+      height: '100vh', 
+      display: 'flex', 
+      flexDirection: 'column',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      background: '#f5f5f5',
+      margin: 0,
+      padding: 0,
+      overflow: 'hidden'
+    }}>
+      {/* Header */}
+      <header style={{
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        color: 'white',
+        padding: '20px 30px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+        flexShrink: 0
+      }}>
+        <h1 style={{ margin: 0, fontSize: '28px', fontWeight: 600 }}>
+          AtmoGraph
+        </h1>
+        <p style={{ margin: '5px 0 0 0', opacity: 0.9, fontSize: '14px' }}>
+          Supply Chain Network Visualization
+        </p>
+      </header>
+
+      {/* Main Content */}
+      <main style={{ 
+        flex: 1,
+        position: 'relative',
+        width: '100%',
+        minHeight: 0
+      }}>
+        {loading ? (
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'center', 
+            alignItems: 'center', 
+            height: '100%',
+            fontSize: '18px',
+            color: '#666'
+          }}>
+            Loading Supply Chain Graph...
+          </div>
+        ) : (
+          <SupplyChainGraph data={graphData} onNodeClick={handleNodeClick} />
+        )}
+        
+        {/* News Analyzer - Top Left */}
+        <NewsAnalyzer 
+          onAnalysisComplete={refreshGraph}
+          onAllRisksCleared={() => {
+            refreshGraph();
+            setSelectedNode(null);
+          }}
+        />
+      </main>
+
+      {/* Node Details Panel - Top Right */}
+      <NodeDetails 
+        node={selectedNode} 
+        onClose={() => setSelectedNode(null)}
+        onRiskCleared={() => {
+          refreshGraph();
+          setSelectedNode(null);
+        }}
+      />
+    </div>
+  );
+}
+
+export default App;
