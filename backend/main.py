@@ -32,14 +32,21 @@ def get_graph():
     """Fetches all nodes and relationships for the graph visualization."""
     db = get_db()
 
+    # Updated to use elementId() and explicitly fetch predicted_delay
     nodes_query = """
     MATCH (n)
-    RETURN id(n) AS id, labels(n) AS labels, properties(n) AS properties
+    RETURN elementId(n) AS id, 
+           labels(n)[0] AS label, 
+           n.name AS name,
+           n.risk_level AS risk_level,
+           n.risk_score AS risk_score,
+           n.predicted_delay AS predicted_delay,
+           properties(n) AS properties
     """
 
     rels_query = """
     MATCH (a)-[r]->(b)
-    RETURN id(a) AS source, id(b) AS target, type(r) AS type
+    RETURN elementId(a) AS source, elementId(b) AS target, type(r) AS type
     """
 
     nodes = []
@@ -50,7 +57,11 @@ def get_graph():
         for record in result_nodes:
             nodes.append({
                 "id": str(record["id"]),
-                "labels": record["labels"],
+                "label": record["label"],
+                "name": record["name"],
+                "risk_level": record["risk_level"],
+                "risk_score": record["risk_score"],
+                "predicted_delay": record["predicted_delay"],
                 "properties": record["properties"]
             })
 
@@ -66,13 +77,19 @@ def get_graph():
 
 
 @app.get("/nodes/{node_id}")
-def get_node(node_id: int):
+def get_node(node_id: str):  # Changed from int to str for elementId compatibility
     """Fetches details for a specific node by its ID."""
     db = get_db()
     query = """
     MATCH (n)
-    WHERE id(n) = $node_id
-    RETURN id(n) AS id, labels(n) AS labels, properties(n) AS properties
+    WHERE elementId(n) = $node_id
+    RETURN elementId(n) AS id, 
+           labels(n)[0] AS label, 
+           n.name AS name,
+           n.risk_level AS risk_level,
+           n.risk_score AS risk_score,
+           n.predicted_delay AS predicted_delay,
+           properties(n) AS properties
     """
 
     with db.session() as session:
@@ -83,7 +100,11 @@ def get_node(node_id: int):
 
         return {
             "id": str(record["id"]),
-            "labels": record["labels"],
+            "label": record["label"],
+            "name": record["name"],
+            "risk_level": record["risk_level"],
+            "risk_score": record["risk_score"],
+            "predicted_delay": record["predicted_delay"],
             "properties": record["properties"]
         }
 
@@ -112,10 +133,12 @@ def analyze_news(request: NewsRequest):
     risk_changes = []
     if nlp_result["disruptions"]:
         for node in matched_nodes:
-            node_id = int(node["id"])
-            update_node_risk_in_neo4j(node_id, risk_level, risk_score)
+            # Note: match_entities_in_neo4j should return elementId as string now, 
+            # but if it returns int, we keep the conversion safe.
+            node_id_str = str(node["id"])
+            update_node_risk_in_neo4j(node_id_str, risk_level, risk_score)
             risk_changes.append({
-                "node_id": node["id"],
+                "node_id": node_id_str,
                 "node_name": node["properties"].get("name"),
                 "new_risk": risk_level,
                 "new_risk_score": risk_score
@@ -131,13 +154,13 @@ def analyze_news(request: NewsRequest):
 
 
 @app.post("/nodes/{node_id}/clear-risk")
-def clear_node_risk(node_id: int):
+def clear_node_risk(node_id: str):  # Changed from int to str
     """Clear the risk properties of a specific node."""
     db = get_db()
     query = """
     MATCH (n)
-    WHERE id(n) = $node_id
-    SET n.risk = 'LOW', n.risk_score = 0.1
+    WHERE elementId(n) = $node_id
+    SET n.risk_level = 'LOW', n.risk_score = 0.1
     RETURN n.name AS name
     """
     with db.session() as session:
@@ -154,7 +177,7 @@ def clear_all_risks():
     db = get_db()
     query = """
     MATCH (n)
-    SET n.risk = 'LOW', n.risk_score = 0.1
+    SET n.risk_level = 'LOW', n.risk_score = 0.1
     RETURN count(n) AS count
     """
     with db.session() as session:

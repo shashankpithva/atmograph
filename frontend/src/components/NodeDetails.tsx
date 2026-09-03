@@ -1,9 +1,15 @@
 // frontend/src/components/NodeDetails.tsx
 import axios from 'axios';
 
+// Updated interface to match the new backend response
 interface NodeData {
   id: string;
-  labels: string[];
+  label?: string;
+  labels?: string[]; // Kept for backwards compatibility
+  name?: string;
+  risk_level?: string;
+  risk_score?: number;
+  predicted_delay?: number;
   properties: any;
 }
 
@@ -16,14 +22,21 @@ interface Props {
 export default function NodeDetails({ node, onClose, onRiskCleared }: Props) {
   if (!node) return null;
 
-  const isRisky = node.properties.risk === 'HIGH' || node.properties.risk === 'MEDIUM';
+  // 1. Safely extract values with fallbacks
+  const label = node.label || (node.labels && node.labels[0]) || 'Default';
+  const nodeName = node.name || node.properties?.name || 'Unknown';
+  const riskLevel = node.risk_level || node.properties?.risk || 'LOW';
+  const riskScore = node.risk_score !== undefined ? node.risk_score : node.properties?.risk_score || 0.1;
+  const predictedDelay = node.predicted_delay !== undefined ? node.predicted_delay : node.properties?.predicted_delay;
 
-  const labelColor = node.labels[0] === 'Country' ? '#4CAF50' :
-                     node.labels[0] === 'Port' ? '#2196F3' :
-                     node.labels[0] === 'Warehouse' ? '#FF9800' :
-                     node.labels[0] === 'Manufacturer' ? '#9C27B0' :
-                     node.labels[0] === 'Supplier' ? '#F44336' :
-                     node.labels[0] === 'Product' ? '#607D8B' : '#999';
+  const isRisky = riskLevel === 'HIGH' || riskLevel === 'MEDIUM';
+
+  const labelColor = label === 'Country' ? '#4CAF50' :
+                     label === 'Port' ? '#2196F3' :
+                     label === 'Warehouse' ? '#FF9800' :
+                     label === 'Manufacturer' ? '#9C27B0' :
+                     label === 'Supplier' ? '#F44336' :
+                     label === 'Product' ? '#607D8B' : '#999';
 
   const handleClearRisk = async () => {
     try {
@@ -80,32 +93,30 @@ export default function NodeDetails({ node, onClose, onRiskCleared }: Props) {
           ×
         </button>
         <h3 style={{ margin: 0, fontSize: '20px', fontWeight: 600 }}>
-          {node.properties.name || 'Unknown'}
+          {nodeName}
         </h3>
         <p style={{ margin: '8px 0 0 0', opacity: 0.9, fontSize: '13px' }}>
-          {node.labels.join(', ')}
+          {label}
         </p>
 
         {/* Risk Badge */}
-        {node.properties.risk && (
-          <div style={{
-            marginTop: '12px',
-            padding: '8px 12px',
-            background: node.properties.risk === 'HIGH' ? 'rgba(220, 38, 38, 0.2)' : 
-                        node.properties.risk === 'MEDIUM' ? 'rgba(234, 88, 12, 0.2)' : 'rgba(22, 163, 74, 0.2)',
-            color: node.properties.risk === 'HIGH' ? '#fca5a5' : 
-                   node.properties.risk === 'MEDIUM' ? '#fdba74' : '#86efac',
-            borderRadius: '6px',
-            fontSize: '13px',
-            fontWeight: 700,
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center'
-          }}>
-            <span>RISK LEVEL</span>
-            <span>{node.properties.risk} ({node.properties.risk_score})</span>
-          </div>
-        )}
+        <div style={{
+          marginTop: '12px',
+          padding: '8px 12px',
+          background: riskLevel === 'HIGH' ? 'rgba(220, 38, 38, 0.2)' : 
+                      riskLevel === 'MEDIUM' ? 'rgba(234, 88, 12, 0.2)' : 'rgba(22, 163, 74, 0.2)',
+          color: riskLevel === 'HIGH' ? '#fca5a5' : 
+                 riskLevel === 'MEDIUM' ? '#fdba74' : '#86efac',
+          borderRadius: '6px',
+          fontSize: '13px',
+          fontWeight: 700,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <span>RISK LEVEL</span>
+          <span>{riskLevel} ({riskScore})</span>
+        </div>
       </div>
 
       {/* Properties */}
@@ -140,6 +151,24 @@ export default function NodeDetails({ node, onClose, onRiskCleared }: Props) {
           </button>
         )}
 
+        {/* Predicted Delay Highlight */}
+        {predictedDelay !== undefined && predictedDelay !== null && (
+          <div style={{
+            padding: '12px',
+            background: '#fff3cd',
+            borderRadius: '8px',
+            borderLeft: '3px solid #ffc107',
+            marginBottom: '15px'
+          }}>
+            <div style={{ fontSize: '12px', color: '#856404', fontWeight: 600, textTransform: 'uppercase', marginBottom: '4px' }}>
+              GNN Predicted Delay
+            </div>
+            <div style={{ fontSize: '18px', color: '#856404', fontWeight: 700 }}>
+              {predictedDelay} hours
+            </div>
+          </div>
+        )}
+
         <h4 style={{ 
           margin: '0 0 15px 0', 
           fontSize: '14px', 
@@ -148,7 +177,7 @@ export default function NodeDetails({ node, onClose, onRiskCleared }: Props) {
           textTransform: 'uppercase',
           letterSpacing: '0.5px'
         }}>
-          Properties
+          All Properties
         </h4>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {Object.entries(node.properties).map(([key, value]) => (

@@ -23,7 +23,7 @@ def match_entities_in_neo4j(entities: list[dict]) -> list[dict]:
             query = """
             MATCH (n)
             WHERE toLower(n.name) = $name
-            RETURN id(n) AS id, labels(n) AS labels, properties(n) AS properties
+            RETURN elementId(n) AS id, labels(n) AS labels, properties(n) AS properties
             """
             result = session.run(query, name=normalized_name)
             records = list(result)
@@ -33,7 +33,7 @@ def match_entities_in_neo4j(entities: list[dict]) -> list[dict]:
                 query = """
                 MATCH (n)
                 WHERE toLower(n.name) CONTAINS $name OR $name CONTAINS toLower(n.name)
-                RETURN id(n) AS id, labels(n) AS labels, properties(n) AS properties
+                RETURN elementId(n) AS id, labels(n) AS labels, properties(n) AS properties
                 LIMIT 1
                 """
                 result = session.run(query, name=normalized_name)
@@ -62,13 +62,14 @@ def calculate_risk(disruptions: list[str]) -> tuple[str, float]:
     else:
         return "HIGH", 0.95
 
-def update_node_risk_in_neo4j(node_id: int, risk_level: str, risk_score: float):
+def update_node_risk_in_neo4j(node_id: str, risk_level: str, risk_score: float):
     """Update the risk properties of a node in Neo4j."""
     db = get_db()
+    # Updated to use elementId and n.risk_level for schema consistency
     query = """
     MATCH (n)
-    WHERE id(n) = $node_id
-    SET n.risk = $risk_level, n.risk_score = $risk_score
+    WHERE elementId(n) = $node_id
+    SET n.risk_level = $risk_level, n.risk_score = $risk_score
     """
     with db.session() as session:
         session.run(query, node_id=node_id, risk_level=risk_level, risk_score=risk_score)

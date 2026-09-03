@@ -20,8 +20,18 @@ const nodeColors: Record<string, string> = {
   Product: '#607D8B',
 };
 
+// Updated interface to match the new backend response
 interface GraphData {
-  nodes: { id: string; labels: string[]; properties: any }[];
+  nodes: { 
+    id: string; 
+    label?: string; 
+    labels?: string[]; // Kept for backwards compatibility
+    name?: string;
+    risk_level?: string;
+    risk_score?: number;
+    predicted_delay?: number;
+    properties: any; 
+  }[];
   links: { source: string; target: string; type: string }[];
 }
 
@@ -35,28 +45,39 @@ export default function SupplyChainGraph({ data, onNodeClick }: Props) {
     if (!data) return { initialNodes: [], initialEdges: [] };
 
     const rfNodes = data.nodes.map((n, index) => {
-      const label = n.labels[0] || 'Default';
+      // 1. Safely get the label (prefers new 'label' string, falls back to old 'labels' array)
+      const label = n.label || (n.labels && n.labels[0]) || 'Default';
       
       // Grid layout optimized for ~35-100 nodes
       const col = index % 7; 
       const row = Math.floor(index / 7);
       
-      // Determine border color based on risk
+      // 2. Safely get risk level (prefers new 'risk_level', falls back to old 'properties.risk')
+      const riskLevel = n.risk_level || n.properties?.risk || 'LOW';
       let borderColor = 'rgba(255,255,255,0.3)';
       let boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
       
-      if (n.properties.risk === 'HIGH') {
+      if (riskLevel === 'HIGH') {
         borderColor = '#dc2626'; // Red
         boxShadow = '0 0 0 3px rgba(220, 38, 38, 0.3), 0 4px 12px rgba(0,0,0,0.15)';
-      } else if (n.properties.risk === 'MEDIUM') {
+      } else if (riskLevel === 'MEDIUM') {
         borderColor = '#ea580c'; // Orange
         boxShadow = '0 0 0 3px rgba(234, 88, 12, 0.3), 0 4px 12px rgba(0,0,0,0.15)';
       }
 
+      // 3. Format predicted delay for display on the node
+      const nodeName = n.name || n.properties?.name || label;
+      const delay = n.predicted_delay;
+      
+      // If delay exists and is > 0, show it on a new line
+      const displayLabel = (delay !== null && delay !== undefined && delay > 0) 
+        ? `${nodeName}\n⚠️ ${delay}h delay` 
+        : nodeName;
+
       return {
         id: n.id,
         data: { 
-          label: n.properties.name || label,
+          label: displayLabel,
         },
         style: {
           background: nodeColors[label] || '#999',
@@ -66,8 +87,9 @@ export default function SupplyChainGraph({ data, onNodeClick }: Props) {
           padding: '12px 16px',
           fontWeight: 600,
           fontSize: '13px',
-          width: 140,
+          width: 150, // Slightly wider to accommodate the delay text
           textAlign: 'center' as const,
+          whiteSpace: 'pre-wrap', // CRITICAL: Allows the \n to render as a new line
           boxShadow: boxShadow,
           transition: 'all 0.3s ease',
         },
@@ -104,7 +126,7 @@ export default function SupplyChainGraph({ data, onNodeClick }: Props) {
     [onNodeClick]
   );
 
-  if (!data) return <div>Loading graph...</div>;
+  if (!data) return <div style={{ padding: '20px' }}>Loading graph...</div>;
 
   return (
     <div style={{ 
