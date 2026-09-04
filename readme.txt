@@ -51,7 +51,3 @@ HOW TO USE THE APPLICATION
 
 ================================================================================
 
-GITHUB 
-username - shashankpithva
-password/personal access token - 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
-
