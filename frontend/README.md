@@ -1,75 +1,39 @@
-# React + TypeScript + Vite
+# AtmoGraph: Supply Chain Risk Visualization
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+AtmoGraph is a full-stack Machine Learning application designed to visualize supply chain networks, detect real-world disruptions using Natural Language Processing (NLP), and predict multi-horizon delay cascades using a Graph Convolutional Network (GCN).
 
-Currently, two official plugins are available:
+## 🛠️ Tech Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Backend**: Python, FastAPI, Neo4j (Graph Database), spaCy (NLP)
+- **Machine Learning**: PyTorch, PyTorch Geometric (PyG)
+- **Frontend**: React, TypeScript, Vite, React Flow (`@xyflow/react`), Axios
+- **Testing**: `pytest`
+- **Infrastructure**: Docker (Neo4j)
 
-## React Compiler
+## ✨ Key Features
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Interactive Graph Visualization**: Drag, pan, and zoom through a 35+ node supply chain network (Countries, Ports, Warehouses, Manufacturers, Suppliers, Products) with risk-based color coding.
+- **NLP Disruption Detection**: Paste news snippets to automatically extract entities and detect disruption keywords (e.g., "strike", "fire", "shutdown") using spaCy.
+- **GNN Delay Prediction**: A 2-layer Graph Convolutional Network predicts delay cascades based on node features (type, degree, current risk) and graph topology.
+- **Multi-Horizon Timeline**: Dynamically switch between Current, 30-Day, 60-Day, and 90-Day predicted delay projections directly in the UI.
+- **Real-Time WebSocket Updates**: The frontend instantly updates with new risk levels and GNN predictions the moment a news article is analyzed, without requiring a page refresh.
+- **Draggable & Minimizable UI**: The News Analyzer panel can be dragged anywhere on the screen and minimized to keep the workspace clean.
+- **Automated Testing**: Comprehensive `pytest` suite for risk logic and mocked GNN data loading.
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## 🚀 Quick Start
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### Prerequisites
+- Python 3.12+
+- Node.js 18+ and npm
+- Docker (for running Neo4j)
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
-```
-
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
-```
+### 1. Database Setup (Neo4j)
+Start a local Neo4j instance using Docker:
+```bash
+docker run -d \
+  --name neo4j-atmograph \
+  -p 7474:7474 -p 7687:7687 \
+  -e NEO4J_AUTH=neo4j/password \
+  neo4j:latest
