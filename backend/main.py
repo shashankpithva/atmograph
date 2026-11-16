@@ -216,7 +216,12 @@ def clear_all_risks():
     db = get_db()
     query = """
     MATCH (n)
-    SET n.risk_level = 'LOW', n.risk_score = 0.1
+    SET n.risk_level = 'LOW',
+        n.risk_score = 0.1,
+        n.predicted_delay = null,
+        n.predicted_delay_30d = null,
+        n.predicted_delay_60d = null,
+        n.predicted_delay_90d = null
     RETURN count(n) AS count
     """
     with db.session() as session:

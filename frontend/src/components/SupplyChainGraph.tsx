@@ -7,6 +7,8 @@ import {
   MiniMap,
   useNodesState,
   useEdgesState,
+  type Node,
+  type Edge,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
@@ -115,8 +117,8 @@ export default function SupplyChainGraph({ data, onNodeClick, selectedHorizon }:
   }, [data, selectedHorizon]);
 
   // 2. Initialize React Flow state (start empty)
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
   // 3. CRITICAL FIX: Sync React Flow state whenever the derived data changes
   useEffect(() => {
@@ -125,7 +127,7 @@ export default function SupplyChainGraph({ data, onNodeClick, selectedHorizon }:
   }, [initialNodes, initialEdges, setNodes, setEdges]);
 
   const onNodeClickHandler = useCallback(
-    (event: React.MouseEvent, node: any) => {
+    (_event: React.MouseEvent, node: Node) => {
       onNodeClick(node.id);
     },
     [onNodeClick]
