@@ -32,3 +32,11 @@ backend/models/*.pt
 
 # Logs
 *.log
+
+# Backup files
+*.bak
+
+# Python test and coverage artifacts
+.pytest_cache/
+.coverage
+htmlcov/
